@@ -26,9 +26,20 @@ export default function Database() {
     }
   };
 
+  const toggleSpoken = async (id, currentVal) => {
+    try {
+      const res = await axios.put(`${API_URL}/api/scraped/${id}`, {
+        spokenToClient: !currentVal
+      });
+      setBusinesses(prev => prev.map(b => b.id === id ? { ...b, spokenToClient: res.data.spokenToClient } : b));
+    } catch (err) {
+      alert('Failed to update spoken status: ' + err.message);
+    }
+  };
+
   const exportCSV = () => {
     if (businesses.length === 0) return;
-    const header = ['Name', 'Phone', 'Rating', 'Reviews', 'Address', 'Website', 'Source', 'Scraped At'];
+    const header = ['Name', 'Phone', 'Rating', 'Reviews', 'Address', 'Website', 'Source', 'Spoken to Client', 'Scraped At'];
     const rows = businesses.map(b => [
       `"${b.name || ''}"`,
       `"${b.phone || ''}"`,
@@ -37,6 +48,7 @@ export default function Database() {
       `"${b.address || ''}"`,
       `"${b.website || ''}"`,
       `"${b.source || ''}"`,
+      b.spokenToClient ? 'Yes' : 'No',
       `"${new Date(b.scrapedAt).toLocaleString()}"`
     ]);
     
@@ -56,7 +68,7 @@ export default function Database() {
     const doc = new jsPDF();
     doc.text('Scraped Leads Database', 14, 15);
     
-    const tableColumn = ["Name", "Phone", "Rating", "Reviews", "Website"];
+    const tableColumn = ["Name", "Phone", "Rating", "Reviews", "Website", "Spoken to Client"];
     const tableRows = [];
 
     businesses.forEach(b => {
@@ -65,7 +77,8 @@ export default function Database() {
         b.phone || 'N/A',
         b.rating?.toString() || 'N/A',
         b.reviewsCount?.toString() || '0',
-        b.website || 'N/A'
+        b.website || 'N/A',
+        b.spokenToClient ? 'Yes' : 'No'
       ];
       tableRows.push(rowData);
     });
@@ -129,6 +142,7 @@ export default function Database() {
                   <th className="px-4 py-3">Phone</th>
                   <th className="px-4 py-3">Rating</th>
                   <th className="px-4 py-3">Website</th>
+                  <th className="px-4 py-3">Spoken to Client</th>
                   <th className="px-4 py-3">Discovered At</th>
                 </tr>
               </thead>
@@ -151,6 +165,19 @@ export default function Database() {
                       </div>
                     </td>
                     <td className="px-4 py-3">{b.website || <span className="text-gray-400">-</span>}</td>
+                    <td className="px-4 py-3">
+                      <label className="inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={!!b.spokenToClient}
+                          onChange={() => toggleSpoken(b.id, b.spokenToClient)}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer"
+                        />
+                        <span className="ml-2 text-xs font-medium text-gray-700">
+                          {b.spokenToClient ? 'Yes' : 'No'}
+                        </span>
+                      </label>
+                    </td>
                     <td className="px-4 py-3 text-gray-400">{new Date(b.scrapedAt).toLocaleDateString()}</td>
                   </tr>
                 ))}
